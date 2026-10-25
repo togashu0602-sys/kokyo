@@ -1,0 +1,451 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>公共チェックポイント</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: one narrow column like a workbook page. Header with the 18 diamond and progress bar, scope chips, one task per screen, three bottom tabs. Answers sit under a red sheet that slides away. */
+:root{
+  --paper:#EEF0F0;
+  --card:#FFFFFF;
+  --ink:#15181D;
+  --muted:#59616B;
+  --rule:#D3D8DB;
+  --red:#C2362E;
+  --sheet:#C2362E;
+  --on-sheet:#FFFFFF;
+  --ok:#1E6B50;
+  --ok-bg:#E3F1EA;
+  --ng-bg:#FBE5E2;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#121417;--card:#1B1E23;--ink:#ECEBE8;--muted:#98A0AA;--rule:#2D3239;
+    --red:#FF7C70;--sheet:#A8312A;--on-sheet:#FFFFFF;--ok:#5FCB9F;--ok-bg:#17312A;--ng-bg:#3A1F1D;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121417;--card:#1B1E23;--ink:#ECEBE8;--muted:#98A0AA;--rule:#2D3239;
+  --red:#FF7C70;--sheet:#A8312A;--on-sheet:#FFFFFF;--ok:#5FCB9F;--ok-bg:#17312A;--ng-bg:#3A1F1D;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;
+  padding-block:18px 100px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:560px;margin:0 auto;min-width:0}
+button{font-family:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+h1,h2,p{margin:0}
+
+/* header */
+.top{display:flex;gap:14px;align-items:center}
+.dia{position:relative;flex:none;width:46px;height:46px;display:grid;place-items:center;font:700 18px var(--display);color:var(--paper)}
+.dia::before{content:"";position:absolute;inset:8px;background:var(--ink);transform:rotate(45deg)}
+.dia span{position:relative}
+h1{font:700 24px/1.25 var(--display);text-wrap:balance}
+.sub{color:var(--muted);font-size:12px;letter-spacing:.04em}
+.prog{margin-top:16px}
+.bar{display:flex;height:6px;border-radius:3px;background:var(--rule);overflow:hidden}
+.bar i{display:block;height:100%}
+.bar .m{background:var(--ink)}
+.bar .w{background:var(--red)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.legend b{color:var(--ink);font-weight:700}
+.legend .tot{margin-left:auto}
+
+/* scope chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-block:18px 16px}
+.chip{min-height:38px;padding:6px 14px;font-size:13px;font-weight:500;border:1px solid var(--rule);background:var(--card);border-radius:999px;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* card */
+.count{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-bottom:8px;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:20px 18px;display:grid;gap:14px;min-width:0}
+.no{font-size:12px;letter-spacing:.1em;color:var(--muted)}
+.no b{font:700 22px var(--display);letter-spacing:0;color:var(--ink);margin-left:2px}
+.q{font:500 19px/1.75 var(--display);text-wrap:pretty;overflow-wrap:anywhere}
+.ans{position:relative;display:block;width:100%;text-align:left;border:1px solid var(--rule);background:var(--paper);padding:14px 16px;min-height:78px;border-radius:4px;overflow:hidden}
+.ans-label{display:block;font-size:11px;letter-spacing:.14em;color:var(--muted)}
+.ans-text{display:block;font:700 21px/1.5 var(--display);color:var(--red);overflow-wrap:anywhere}
+.sheet{position:absolute;inset:0;display:grid;place-items:center;background-color:var(--sheet);background-image:repeating-linear-gradient(115deg,rgba(255,255,255,.09) 0 2px,transparent 2px 8px);color:var(--on-sheet);font-size:13px;font-weight:500;letter-spacing:.12em;transition:transform .38s cubic-bezier(.2,.7,.2,1)}
+.open>.sheet{transform:translateX(105%)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.btn{min-height:54px;padding:8px 14px;font-size:16px;font-weight:700;border:1.5px solid var(--ink);background:var(--card);border-radius:4px}
+.btn.got{background:var(--ink);color:var(--paper)}
+.btn:disabled{opacity:.35;cursor:default}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+.ghost{min-height:44px;padding:6px 12px;font-size:13px;border:0;background:none;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.ghost[aria-pressed="true"]{color:var(--ink);font-weight:700}
+
+/* quiz */
+.choices{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:10px}
+.choice{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 14px;text-align:left;font-size:16px;font-weight:500;line-height:1.4;background:var(--card);border:1px solid var(--rule);border-radius:4px;overflow-wrap:anywhere}
+.choice:disabled{opacity:1;cursor:default;color:var(--ink)}
+.choice.dim{opacity:.55}
+.choice.ok{border-color:var(--ok);background:var(--ok-bg)}
+.choice.ng{border-color:var(--red);background:var(--ng-bg)}
+.mark{flex:none;width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--ink);border-radius:50%;font:700 14px var(--display)}
+.ok .mark{border-color:var(--ok);color:var(--ok)}
+.ng .mark{border-color:var(--red);color:var(--red)}
+.fb{margin-top:14px;font-weight:700}
+.fb.ok{color:var(--ok)}
+.fb.ng{color:var(--red)}
+.next{margin-top:10px;width:100%}
+
+/* result */
+.score{font:700 56px/1 var(--display);font-variant-numeric:tabular-nums}
+.score small{font-size:20px;margin-left:6px;color:var(--muted)}
+.wrongs{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.wrongs li{display:grid;grid-template-columns:34px 1fr;gap:8px;font-size:14px}
+.wrongs b{font:700 14px var(--display);color:var(--muted)}
+.wrongs span{color:var(--red);font-weight:700;overflow-wrap:anywhere}
+.stack{display:grid;gap:10px;margin-top:4px}
+
+/* list */
+.tool{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:4px}
+.tool p{font-size:12px;color:var(--muted)}
+.chh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 10px;margin-top:26px;padding-bottom:6px;border-bottom:2px solid var(--ink);font:700 15px/1.5 var(--display)}
+.chh small{font:400 12px var(--body);color:var(--muted)}
+.rows{list-style:none;margin:0;padding:0}
+.row{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.rn{font:700 15px var(--display);color:var(--muted);font-variant-numeric:tabular-nums}
+.rq{font-size:14px;line-height:1.7;overflow-wrap:anywhere}
+.ar{display:flex;align-items:center;gap:10px;margin-top:6px}
+.ra{position:relative;min-width:132px;max-width:100%;min-height:38px;padding:6px 10px;text-align:left;border:1px solid var(--rule);background:var(--paper);border-radius:3px;overflow:hidden}
+.rt{display:block;font:700 15px/1.5 var(--display);color:var(--red);overflow-wrap:anywhere}
+.pill{flex:none;font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--ink)}
+.pill.w{border-color:var(--red);color:var(--red)}
+.reset{margin-top:28px;padding-top:12px;border-top:1px solid var(--rule);display:grid;gap:10px;justify-items:start}
+.reset p{font-size:13px;color:var(--muted)}
+.reset .two{display:flex;gap:10px}
+.reset .btn{min-height:44px;font-size:14px}
+
+.empty{display:grid;gap:14px;justify-items:center;text-align:center;padding:36px 8px;color:var(--muted)}
+
+/* tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:center;background:var(--card);border-top:1px solid var(--rule);padding:6px max(16px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.tabs-in{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;max-width:560px}
+.tab{min-height:50px;border:0;background:none;font-size:14px;font-weight:500;color:var(--muted);border-radius:4px}
+.tab[aria-current="page"]{color:var(--ink);font-weight:700;box-shadow:inset 0 -3px 0 var(--red)}
+
+@media (prefers-reduced-motion: reduce){.sheet{transition:none}}
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+(function(){
+  var CH=[
+    {id:1,name:"第1編第1章 公共的な空間をつくる私たち",pages:"教科書p.10〜27"},
+    {id:2,name:"第1編第2章 公共的な空間における人間としてのあり方生き方",pages:"教科書p.28〜43"},
+    {id:3,name:"第1編第3章 公共的な空間における基本的原理",pages:"教科書p.44〜68"}
+  ];
+  var RAW=[
+["子どもとおとなの中間にある青年をさす、レヴィンの用語","マージナルマン(境界人、周辺人)"],
+["社会的責任が猶予される青年期を、エリクソンは何といったか","モラトリアム"],
+["青年期を「第二の誕生」と表現した人物","ルソー"],
+["欲求階層説を唱えたアメリカの心理学者","マズロー"],
+["自分のなかで無意識のうちに心理的解決をはかろうとする心の働き","防衛機制"],
+["青年期の発達課題で達成すべきもの","アイデンティティ(自我同一性)の確立"],
+["日本語では多様性と訳されることば","ダイバーシティ"],
+["歴史的に形成された社会的・文化的な性のありよう","ジェンダー"],
+["すべての人々を社会の構成員としてつつみ支えあう姿勢","ソーシャル・インクルージョン(社会的包摂)"],
+["自文化を基準に、他の文化を否定したり、低く評価したりする考え","自民族中心主義(エスノセントリズム)"],
+["社会のなかで複数の文化がそれぞれ対等に共存する考え","多文化主義(マルチカルチュラリズム)"],
+["気候・地形・地質など自然環境と人間の文化のこと","風土"],
+["清流などに身を浸して罪や穢れを洗い流す儀礼","禊"],
+["日本の伝統的精神を尊重しつつ、西洋の科学技術を受け入れる考え方","和魂洋才"],
+["日本古来の伝統的なものの考え方や文化を探究した江戸時代の学問","国学"],
+["仏教の信仰と日本古来の神々の信仰を融合した宗教のあり方","神仏習合"],
+["神は仏が衆生を救うために仮の姿として出現したものとする思想","本地垂迹説"],
+["イエスの説く神の愛をギリシャ語で何というか","アガペー"],
+["イスラームの聖典","クルアーン(コーラン)"],
+["あらゆるものが互いに依存しあって存在しているという仏教の考え方","縁起の法"],
+["社会の最大幸福を目的と見なし、個人の行為や政策などが、この目的の増進に対して、どの程度貢献しているかを正しさの基準とする考え方","功利主義"],
+["環境問題に対して科学的知識をもつ一方で、個人が環境のなかでどのような選択・判断をし、どのような行動をとるかという倫理的姿勢","環境倫理"],
+["1997年制定の臓器移植の場合に限り脳死は人の死と規定した法律","臓器移植法"],
+["人間らしく生きる人生の質のことを、3文字の略語で何というか","QOL"],
+["再生医療で用いられるもので、体細胞にある幹細胞を特定の遺伝子を導入して育てることで採取できる細胞は何か","iPS細胞(人工多能性幹細胞)"],
+["行為決定の判断基準として「最大多数の最大幸福」を主張した人物","ベンサム"],
+["質的功利主義とよばれる考え方を唱えた人物","J.S.ミル"],
+["ドイツ最大の哲学者の一人で、『実践理性批判』を著した人物","カント"],
+["誰もが無条件に従うべき、それ自体が目的となる普遍的な命法","定言命法"],
+["目的や願望を実現するための手段としておこなわれる場合の命法","仮言命法"],
+["潜在能力(ケイパビリティ)の実現を主張したインド出身の経済学者","セン"],
+["将来の地位や能力が予想されない原初状態をロールズは何といったか","無知のヴェール"],
+["ものや人間にそなわる固有のよさ、すぐれたあり方を意味する","徳(アレテー)"],
+["ソクラテスが真実を求めるための方法として、重視した対話法","問答法"],
+["プラトンの主張した四元徳とは何か","知恵、勇気、節制、正義"],
+["アリストテレスが主張した、過度や不足の両極端を避けて、思慮に従って判断される適当な中間のことを何というか","中庸"],
+["アリストテレスが考えた理性に従って純粋に真理を求めること","観想(テオーリア)"],
+["人間の存在を「間柄的存在」と表現した日本の思想家","和辻哲郎"],
+["儒教の祖。弟子がその人物のことばを記したものに『論語』がある","孔子"],
+["儒教の用語で、親子や兄弟の間の親愛の情を何というか","仁"],
+["社会に参画しながら生きることを表現したサルトルのことば","アンガージュマン"],
+["「人は女に生まれるのではない、女になるのだ」と述べた思想家","ボーヴォワール"],
+["シュヴァイツァーが倫理の基本であるとした、生命あるものを敬うことを示すことば","生命への畏敬"],
+["非暴力の抵抗という考え方を樹立し実践したインド独立運動の指導者","ガンディー"],
+["インドのスラム街で、「愛と奉仕」の活動に生涯をささげた人物","マザー・テレサ"],
+["アメリカで、人種差別撤廃のための公民権運動を指導した人物","キング牧師"],
+["実質的な機会均等のために、一定の範囲で特別な機会を提供すること","積極的改善措置(ポジティブ・アクション)"],
+["生命・自由・幸福追求を天賦人権とする1776年に出された宣言","アメリカ独立宣言"],
+["自由・所有権・安全および圧制への抵抗を自然権とする1789年に出された宣言","フランス人権宣言"],
+["自由・平等・財産権の保障など、国家からの自由を保障する権利","自由権(自由権的基本権)"],
+["生存の保障や福祉の実現などの、国家による自由を保障する権利","社会権(社会権的基本権)"],
+["1919年に制定された、世界ではじめて【No.51の答え】を規定した憲法","ワイマール憲法(ドイツ共和国憲法)"],
+["1948年に国連総会で採択された、幅広い人権擁護を含む宣言","世界人権宣言"],
+["【No.53の答え】を具体化し、法的拘束力をもたせたもの","国際人権規約"],
+["人々が権利を守るために契約を結び、社会が成立するという考え方","社会契約説"],
+["「闘争状態」を回避するため、自然権を譲渡すべきと説いた思想家","ホッブズ"],
+["代議制を重視し、市民による抵抗権(革命権)の行使を説いた思想家","ロック"],
+["一般意志に基づく直接民主制を主張した思想家","ルソー"],
+["情緒や感情で政治的態度を決める、大衆の支持を基盤とした政治手法","ポピュリズム"],
+["法が国家権力を拘束することによって国民の権利・自由を守る考え方","法の支配"],
+["行政権が、形式的に法律に基づいているかどうかを重視する考え方","法治主義"],
+["立法権・執行権・裁判権の三権分立論を説いた人物","モンテスキュー"],
+["国家権力を制約する思想やしくみで、憲法の基盤となる考え方","立憲主義"],
+["議会は首相を任命し、内閣は議会の信任に基づいて存立する制度","議院内閣制"],
+["個人の行為が他者の生命、安全あるいは財産を損なう場合に限り、その個人に制裁を加えてもよいとする【No.27の答え】が唱えた原則","他者危害の原則"],
+["国民から直接選挙された国家元首のもとで厳格な三権分立をとる制度","大統領制"],
+["国家権力を国民の代表である立法機関に集中させる制度","権力集中制(民主集中制)"],
+["発展途上国で見られた、経済開発を最優先させる体制","開発独裁"],
+["明治憲法下で、国民の権利が法律によって制限されていたこと","法律の留保"],
+["天皇が内閣の助言と承認に基づいておこなう儀礼的・形式的な行為","国事行為"],
+["改正手続きが通常の法律よりも厳格な憲法","硬性憲法"]
+  ];
+  var ITEMS=RAW.map(function(r,i){return {n:i+1,q:r[0],a:r[1],ch:i<20?1:(i<40?2:3)};});
+  var KEY="kokyo-checkpoint1-progress-v1";
+  var prog={};
+  try{prog=JSON.parse(localStorage.getItem(KEY)||"{}")||{};}catch(e){prog={};}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(prog));}catch(e){}}
+  function st(n){return (prog[n]&&prog[n].s)||0;}
+  function mark(n,ok,force){
+    var p=prog[n]||{s:0,c:0};
+    if(ok){p.c=(p.c||0)+1; if(force||p.s!==1||p.c>=2)p.s=2;}
+    else{p.s=1;p.c=0;}
+    prog[n]=p; save();
+  }
+  function shuffle(a){
+    a=a.slice();
+    for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}
+    return a;
+  }
+  function uniq(a){return a.filter(function(x,i){return a.indexOf(x)===i;});}
+
+  var S={mode:"card",scope:"all",shuffle:false,card:null,quiz:null,cover:true,open:{},reset:false};
+
+  function pool(){
+    return ITEMS.filter(function(it){
+      if(S.scope==="all")return true;
+      if(S.scope==="weak")return st(it.n)===1;
+      return it.ch===S.scope;
+    });
+  }
+  function startCard(){S.card={deck:S.shuffle?shuffle(pool()):pool(),i:0,shown:false};}
+  function choicesFor(it){
+    var same=uniq(ITEMS.filter(function(x){return x.ch===it.ch&&x.a!==it.a;}).map(function(x){return x.a;}));
+    var other=uniq(ITEMS.filter(function(x){return x.ch!==it.ch&&x.a!==it.a;}).map(function(x){return x.a;}));
+    var d=shuffle(same).slice(0,3);
+    if(d.length<3){d=d.concat(shuffle(other).filter(function(a){return d.indexOf(a)<0;}).slice(0,3-d.length));}
+    return shuffle([it.a].concat(d));
+  }
+  function setChoices(){S.quiz.choices=choicesFor(S.quiz.deck[S.quiz.i]);}
+  function startQuiz(items){
+    var deck=shuffle(items||pool());
+    S.quiz={deck:deck,i:0,picked:null,score:0,wrong:[],done:false,choices:null};
+    if(deck.length)setChoices();
+  }
+
+  var app=document.getElementById("app");
+
+  function head(){
+    var m=0,w=0,t=ITEMS.length;
+    ITEMS.forEach(function(i){var s=st(i.n);if(s===2)m++;else if(s===1)w++;});
+    var u=t-m-w;
+    return '<header><div class="top"><div class="dia"><span>18</span></div><div><h1>チェックポイント①</h1><p class="sub">公共 第1編 ・ 問題集 p.40〜41</p></div></div>'+
+      '<div class="prog" role="img" aria-label="覚えた'+m+'問、苦手'+w+'問、未着手'+u+'問"><div class="bar"><i class="m" style="width:'+(m/t*100)+'%"></i><i class="w" style="width:'+(w/t*100)+'%"></i></div>'+
+      '<p class="legend"><span>覚えた <b>'+m+'</b></span><span>苦手 <b>'+w+'</b></span><span>未着手 <b>'+u+'</b></span><span class="tot">全'+t+'問</span></p></div></header>';
+  }
+  function chips(){
+    var wk=ITEMS.filter(function(i){return st(i.n)===1;}).length;
+    var defs=[["all","全71問"],[1,"第1章 1–20"],[2,"第2章 21–40"],[3,"第3章 41–71"],["weak","苦手 "+wk]];
+    return '<div class="chips" role="group" aria-label="出題範囲">'+defs.map(function(d){
+      return '<button class="chip" data-act="scope" data-v="'+d[0]+'" aria-pressed="'+(S.scope===d[0])+'">'+d[1]+'</button>';
+    }).join("")+'</div>';
+  }
+  function tabs(){
+    var T=[["card","カード"],["quiz","4択"],["list","一覧"]];
+    return '<nav class="tabs" aria-label="学習モード"><div class="tabs-in">'+T.map(function(t){
+      return '<button class="tab" data-act="tab" data-v="'+t[0]+'"'+(S.mode===t[0]?' aria-current="page"':'')+'>'+t[1]+'</button>';
+    }).join("")+'</div></nav>';
+  }
+  function empty(msg){
+    return '<div class="empty"><p>'+msg+'</p><button class="btn" data-act="scope" data-v="all">全71問に戻る</button></div>';
+  }
+  function emptyMsg(){
+    return S.scope==="weak"?"苦手に入っている問題はまだありません。カードやクイズで間違えた問題がここに集まります。":"この範囲に問題がありません。";
+  }
+
+  function viewCard(){
+    var c=S.card;
+    if(!c.deck.length)return empty(emptyMsg());
+    if(c.i>=c.deck.length){
+      var m=0,w=0;
+      c.deck.forEach(function(it){var s=st(it.n);if(s===2)m++;else if(s===1)w++;});
+      return '<div class="card"><p class="no">ひと回り完了</p><p class="score">'+m+'<small>/ '+c.deck.length+' 覚えた</small></p>'+
+        '<p>苦手に入っている問題は '+w+' 問です。</p>'+
+        '<div class="stack">'+(w>0?'<button class="btn got" data-act="scope" data-v="weak">苦手だけ復習する</button>':'')+
+        '<button class="btn" data-act="restart">最初からもう一度</button></div></div>';
+    }
+    var it=c.deck[c.i];
+    var ch=CH[it.ch-1];
+    return '<section><div class="count"><span>'+(c.i+1)+' / '+c.deck.length+'</span><span>第'+it.ch+'章</span></div>'+
+      '<article class="card"><p class="no">No.<b>'+it.n+'</b></p><h2 class="q">'+it.q+'</h2>'+
+      '<button class="ans'+(c.shown?' open':'')+'" data-act="reveal" aria-expanded="'+c.shown+'"><span class="ans-label">答え</span><span class="ans-text">'+it.a+'</span><span class="sheet" aria-hidden="true">タップで赤シートをずらす</span></button></article>'+
+      '<div class="actions"><button class="btn judge" data-act="again"'+(c.shown?'':' disabled')+'>もう一度</button><button class="btn got judge" data-act="got"'+(c.shown?'':' disabled')+'>覚えた</button></div>'+
+      '<div class="nav"><button class="ghost" data-act="prev">← 前の問題</button><button class="ghost" data-act="shuffle" aria-pressed="'+S.shuffle+'">'+(S.shuffle?'順番に戻す':'シャッフル')+'</button><button class="ghost" data-act="next">次の問題 →</button></div></section>';
+  }
+
+  function viewQuiz(){
+    var q=S.quiz;
+    if(!q||!q.deck.length)return empty(emptyMsg());
+    if(q.done){
+      var html='<div class="card"><p class="no">結果</p><p class="score">'+q.score+'<small>/ '+q.deck.length+' 問正解</small></p>';
+      if(q.wrong.length){
+        html+='<p>間違えた問題</p><ul class="wrongs">'+q.wrong.map(function(it){return '<li><b>'+it.n+'</b><span>'+it.a+'</span></li>';}).join("")+'</ul>';
+      }else{
+        html+='<p>全問正解です。</p>';
+      }
+      html+='<div class="stack">'+(q.wrong.length?'<button class="btn got" data-act="qwrong">間違いだけやり直す</button>':'')+'<button class="btn" data-act="qagain">もう一度はじめから</button></div></div>';
+      return html;
+    }
+    var it=q.deck[q.i],ans=q.picked!==null,labels=["ア","イ","ウ","エ"];
+    var lis=q.choices.map(function(c,k){
+      var cls="choice",mk=labels[k];
+      if(ans){
+        if(c===it.a){cls+=" ok";mk="○";}
+        else if(k===q.picked){cls+=" ng";mk="×";}
+        else cls+=" dim";
+      }
+      return '<li><button class="'+cls+'" data-act="pick" data-k="'+k+'"'+(ans?' disabled':'')+'><span class="mark">'+mk+'</span><span>'+c+'</span></button></li>';
+    }).join("");
+    var fb="";
+    if(ans){
+      fb=(q.choices[q.picked]===it.a?'<p class="fb ok">正解です</p>':'<p class="fb ng">不正解。答えは「'+it.a+'」</p>')+
+        '<button class="btn got next" data-act="qnext">'+(q.i===q.deck.length-1?'結果を見る':'次の問題へ')+'</button>';
+    }
+    return '<section><div class="count"><span>Q'+(q.i+1)+' / '+q.deck.length+'</span><span>正解 '+q.score+'</span></div>'+
+      '<article class="card"><p class="no">No.<b>'+it.n+'</b></p><h2 class="q">'+it.q+'</h2></article>'+
+      '<ol class="choices">'+lis+'</ol>'+fb+'</section>';
+  }
+
+  function viewList(){
+    var items=pool();
+    if(!items.length)return empty(emptyMsg());
+    var html='<div class="tool"><button class="chip" data-act="cover" aria-pressed="'+S.cover+'">赤シート '+(S.cover?'あり':'なし')+'</button><p>答えをタップするとずらせます</p></div>';
+    CH.forEach(function(ch){
+      var group=items.filter(function(it){return it.ch===ch.id;});
+      if(!group.length)return;
+      html+='<h2 class="chh"><span>■'+ch.name+'</span><small>'+ch.pages+'</small></h2><ul class="rows">';
+      group.forEach(function(it){
+        var s=st(it.n);
+        var open=!S.cover||S.open[it.n];
+        var pill=s===2?'<span class="pill">覚えた</span>':(s===1?'<span class="pill w">苦手</span>':'');
+        html+='<li class="row"><span class="rn">'+it.n+'</span><div><p class="rq">'+it.q+'</p><div class="ar"><button class="ra'+(open?' open':'')+'" data-act="rowreveal" data-n="'+it.n+'"><span class="rt">'+it.a+'</span><span class="sheet" aria-hidden="true"></span></button>'+pill+'</div></div></li>';
+      });
+      html+='</ul>';
+    });
+    html+='<div class="reset">'+(S.reset?
+      '<p>覚えた・苦手の記録をすべて消します。</p><div class="two"><button class="btn got" data-act="resetYes">消す</button><button class="btn" data-act="resetNo">やめる</button></div>':
+      '<button class="ghost" data-act="resetAsk">進捗をリセット</button>')+'</div>';
+    return html;
+  }
+
+  function render(){
+    var a=document.activeElement,sel=null;
+    if(a&&a.dataset&&a.dataset.act){
+      sel='[data-act="'+a.dataset.act+'"]'+(a.dataset.k!=null?'[data-k="'+a.dataset.k+'"]':'')+(a.dataset.n!=null?'[data-n="'+a.dataset.n+'"]':'')+(a.dataset.v!=null?'[data-v="'+a.dataset.v+'"]':'');
+    }
+    var body=S.mode==="card"?viewCard():(S.mode==="quiz"?viewQuiz():viewList());
+    app.innerHTML=head()+chips()+body+tabs();
+    if(sel){var el=document.querySelector(sel);if(el&&!el.disabled)el.focus({preventScroll:true});}
+  }
+
+  function act(a,d){
+    var c=S.card,q=S.quiz,it;
+    switch(a){
+      case "tab":
+        S.mode=d.v;S.reset=false;
+        if(S.mode==="quiz"&&!S.quiz)startQuiz();
+        window.scrollTo(0,0);
+        break;
+      case "scope":
+        S.scope=(d.v==="all"||d.v==="weak")?d.v:+d.v;
+        S.reset=false;startCard();S.quiz=null;
+        if(S.mode==="quiz")startQuiz();
+        break;
+      case "shuffle":S.shuffle=!S.shuffle;startCard();break;
+      case "restart":startCard();break;
+      case "prev":if(c.i>0){c.i--;c.shown=false;}break;
+      case "next":if(c.i<c.deck.length){c.i++;c.shown=false;}break;
+      case "got":
+        if(!c.shown)break;
+        mark(c.deck[c.i].n,true,true);c.i++;c.shown=false;break;
+      case "again":
+        if(!c.shown)break;
+        mark(c.deck[c.i].n,false);c.i++;c.shown=false;break;
+      case "pick":
+        if(!q||q.picked!==null)break;
+        q.picked=+d.k;it=q.deck[q.i];
+        var ok=q.choices[q.picked]===it.a;
+        if(ok)q.score++;else q.wrong.push(it);
+        mark(it.n,ok);
+        break;
+      case "qnext":
+        q.i++;q.picked=null;
+        if(q.i>=q.deck.length)q.done=true;else setChoices();
+        break;
+      case "qwrong":startQuiz(q.wrong.slice());break;
+      case "qagain":startQuiz();break;
+      case "cover":S.cover=!S.cover;S.open={};break;
+      case "resetAsk":S.reset=true;break;
+      case "resetNo":S.reset=false;break;
+      case "resetYes":prog={};save();S.reset=false;startCard();S.quiz=null;break;
+    }
+  }
+
+  document.addEventListener("click",function(e){
+    var b=e.target.closest("[data-act]");
+    if(!b)return;
+    var a=b.dataset.act;
+    if(a==="reveal"){
+      S.card.shown=!S.card.shown;
+      b.classList.toggle("open",S.card.shown);
+      b.setAttribute("aria-expanded",String(S.card.shown));
+      var js=document.querySelectorAll(".judge");
+      for(var i=0;i<js.length;i++)js[i].disabled=!S.card.shown;
+      return;
+    }
+    if(a==="rowreveal"){
+      var n=b.dataset.n;
+      S.open[n]=!S.open[n];
+      b.classList.toggle("open",!S.cover||!!S.open[n]);
+      return;
+    }
+    act(a,b.dataset);
+    render();
+  });
+
+  startCard();
+  render();
+})();
+</script>
+
+</body></html>
